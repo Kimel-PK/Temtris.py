@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Uruchom Temtris",
+			"type": "shell",
+			"command": "python3 Temtris.py",
+			"group": {
+		  		"kind": "build",
+		  		"isDefault": true
+			}
+	  	}
+	]
+}
