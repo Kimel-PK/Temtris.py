@@ -128,17 +128,8 @@ class Temtris () :
 	
 	def Intro (self) :
 		
-		# TODO czy da się to uprościć?
-		# czekaj 32 klatki
-		for _ in range (0, 16) :
-			for event in pygame.event.get() :
-				if event.type == KEYDOWN :
-					# START
-					if event.key == (self.START1 or self.START2) :
-						return
-			
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+		if not self.CzekajLubPomiń (16) :
+			return
 		
 		introSprite = pygame.image.load ("Assets/Grafika/intro sprite.png")
 		
@@ -149,28 +140,11 @@ class Temtris () :
 			
 			self.okno.blit(introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
 			
-			# czekaj 32 klatki
-			for _ in range (0, 16) :
-				# TODO czy da się to uprościć?
-				for event in pygame.event.get() :
-					if event.type == KEYDOWN :
-						# START
-						if event.key == (self.START1 or self.START2) :
-							return
-				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
+			if not self.CzekajLubPomiń (16) :
+				return
 		
-		# czekaj 180 klatek
-		for _ in range (0, 90) :
-			for event in pygame.event.get() :
-				if event.type == KEYDOWN :
-					# START
-					if event.key == (self.START1 or self.START2) :
-						return
-			
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+		if not self.CzekajLubPomiń (90) :
+			return
 			
 		pygame.mixer.music.stop ()
 	
@@ -548,31 +522,37 @@ class Temtris () :
 		licznikLinii.append (self.Liczba (self, 4, 3, 9))
 		licznikPunktów.append (self.Liczba (self, 4, 3, 12))
 		
+		następnyKolcek = []
+		następnyKolcek.append (self.Klocek (self))
+		następnyKolcek[0].UstawPozycję (4, 4)
+		
 		if dwóchGraczy :
 			tłoGra = pygame.image.load ("Assets/Grafika/gra dwóch graczy.png")
-			licznikLinii.append (self.Liczba (self, 4, 2, 2))
-			licznikPunktów.append (self.Liczba (self, 4, 4, 4))
+			
+			licznikLinii.append (self.Liczba (self, 4, 21, 9))
+			licznikPunktów.append (self.Liczba (self, 4, 21, 12))
+			
+			następnyKolcek.append (self.Klocek (self))
+			następnyKolcek[1].UstawPozycję (22, 4)
 		else :
 			tłoGra = pygame.image.load ("Assets/Grafika/gra.png")
-			
-		self.okno.blit (tłoGra, tłoGra.get_rect())
 		
-		następnyKolcek = self.Klocek (self)
-		następnyKolcek.UstawPozycję (4, 4)
+		self.okno.blit (tłoGra, tłoGra.get_rect())
 		
 		while True :
 			
 			# stwórz obecny i następny klocek
-			
-			obecnyKlocek = następnyKolcek
+			obecnyKlocek = następnyKolcek[self.obecnyGracz]
 			if not obecnyKlocek.UstawPozycję (13, 5) :
 				break
-			następnyKolcek = self.Klocek (self)
-			następnyKolcek.UstawPozycję (4, 4)
+			następnyKolcek[self.obecnyGracz] = self.Klocek (self)
+			następnyKolcek[self.obecnyGracz].UstawPozycję (4, 4)
 			
 			wszystkieSprite = pygame.sprite.Group()
 			wszystkieSprite.add (obecnyKlocek)
-			wszystkieSprite.add (następnyKolcek)
+			wszystkieSprite.add (następnyKolcek[0])
+			if dwóchGraczy :
+				wszystkieSprite.add (następnyKolcek[1])
 			wszystkieSprite.draw (self.okno)
 			
 			# opadanie klocka
@@ -654,6 +634,11 @@ class Temtris () :
 				
 			pygame.display.update ()
 			self.zegar.tick (self.fps)
+			
+			# zmień gracza
+			if dwóchGraczy :
+				self.obecnyGracz = 1 - self.obecnyGracz
+			
 
 	# ###########################
 	#         KONIEC GRY
@@ -708,6 +693,41 @@ class Temtris () :
 				
 				pygame.display.update ()
 				self.zegar.tick (self.fps)
+	
+	# #######################
+	#       PRZYDATNE
+	# #######################
+	
+	def Czekaj (self, klatki) :
+		for _ in range (0, klatki) :
+			
+			for event in pygame.event.get() :
+				# naciśnięcie X na oknie
+				if event.type == QUIT:
+					pygame.quit ()
+					exit ()
+					
+			pygame.display.update ()
+			self.zegar.tick (self.fps)
+	
+	def CzekajLubPomiń (self, klatki) :
+		for _ in range (0, klatki) :
+			for event in pygame.event.get() :
+				
+				# naciśnięcie X na oknie
+				if event.type == QUIT:
+					pygame.quit ()
+					exit ()
+					
+				if event.type == KEYDOWN :
+					# START
+					if event.key == (self.START1 or self.START2) :
+						return False
+			
+			pygame.display.update ()
+			self.zegar.tick (self.fps)
+		
+		return True
 	
 	# #######################
 	#        LICZNIKI
