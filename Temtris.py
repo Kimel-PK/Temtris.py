@@ -21,9 +21,6 @@
 #                                                                                              Kimel_PK
 # #####################################################################################################
 
-# TODO czemu grafika nie zawsze się aktualizuje po rozbiciu linii?
-# TODO wyświetlanie obecnego klocka po tym jak zobaczymy game over
-
 import pygame
 from pygame.locals import *
 from random import randrange
@@ -33,9 +30,9 @@ class Temtris () :
 	def __init__ (self) :
 		
 		# podstawowe ustawienia
-		self.szerokośćOkna = 1024
-		self.wysokośćOkna = 896
 		self.fps = 60
+		wysokośćObrazu = 224
+		self.proporcjeObrazu = 1.142857142857143
 		
 		self.PX = 4 # szerokość piksela
 		self.PY = 4 # wysokość piksela
@@ -55,40 +52,34 @@ class Temtris () :
 		self.SELECT1 = K_RSHIFT
 		
 		# gracz 2
-		self.A2 = K_l
-		self.B2 = K_k
-		self.UP2 = K_UP
-		self.DOWN2 = K_DOWN
-		self.LEFT2 = K_LEFT
-		self.RIGHT2 = K_RIGHT
+		self.A2 = K_x
+		self.B2 = K_z
+		self.UP2 = K_g
+		self.DOWN2 = K_b
+		self.LEFT2 = K_v
+		self.RIGHT2 = K_n
 		self.START2 = K_RETURN
 		self.SELECT2 = K_RSHIFT
 		
 		# zmienne sterujące gry
-		self.pauza = False
-		self.poziom = 0
-		self.liczbaLinii = [0, 0]
-		self.liczbaLiniiCheems = [0, 0]
-		self.liczbaLiniiDoge = [0, 0]
-		self.liczbaLiniiBuffDoge = [0, 0]
-		self.liczbaLiniiTemtris = [0, 0]
-		self.liczbaPunktów = [0, 0]
-		self.czasGry = 0
-		self.dwóchGraczy = False
-		self.obecnyGracz = 0
-		self.zegarKontrolera = 10
-		self.zegarKontroleraObrót = 10
-		self.szybkośćOpadaniaKlocka = 60
-		self.zegarOpadania = 60
-		self.poprzednieKlawisze = []
-		
-		self.plansza = self.Plansza (self)
+		self.WyzerujZmienneSterujące ()
+		self.klawisze = {self.A1: False, self.B1: False, self.UP1: False, self.DOWN1: False, self.LEFT1: False, self.RIGHT1: False, self.START1: False, self.SELECT1: False, self.A2: False, self.B2: False, self.UP2: False, self.DOWN2: False, self.LEFT2: False, self.RIGHT2: False, self.START2: False, self.SELECT2: False}
+		self.poprzednieKlawisze = {self.A1: False, self.B1: False, self.UP1: False, self.DOWN1: False, self.LEFT1: False, self.RIGHT1: False, self.START1: False, self.SELECT1: False, self.A2: False, self.B2: False, self.UP2: False, self.DOWN2: False, self.LEFT2: False, self.RIGHT2: False, self.START2: False, self.SELECT2: False}
 		
 		# startujemy pygame
 		pygame.init()
+		
+		# dopasowanie okna gry do monitora
+		monitor = pygame.display.Info()
+		i = 1
+		while wysokośćObrazu * i < monitor.current_h * 0.8 :
+			i += 1
+		
 		pygame.mixer.init ()
 		self.zegar = pygame.time.Clock ()
-		self.okno = pygame.display.set_mode ((self.szerokośćOkna, self.wysokośćOkna))
+		self.okno = pygame.display.set_mode ((int (wysokośćObrazu * i * self.proporcjeObrazu), wysokośćObrazu * i), HWSURFACE|DOUBLEBUF|RESIZABLE)
+		self.obraz = pygame.surface.Surface (self.okno.get_rect ().size)
+		self.obraz.fill ((0, 0, 0))
 		ikona = pygame.image.load("Assets/Grafika/ikona.png")
 		pygame.display.set_icon(ikona)
 		pygame.display.set_caption ("Temtris.py")
@@ -131,6 +122,35 @@ class Temtris () :
 		
 	def Start (self) :
 		
+		print ("############################################################")
+		print ()
+		print ("    ██████████                   ██")
+		print ("        ██                    ▄██████        ██")
+		print ("        ██  ███████              ██")
+		print ("        ██  ██       █████████▄  ██  █▄▄███  ██  ▄████▄")
+		print ("        ██  █████    ██  ██  ██  ██  ██▀     ██  ▀█▄▄")
+		print ("        ██  ██       ██  ██  ██  ██  ██      ██    ▀▀█▄")
+		print ("        ██  ███████  ██  ██  ██  ██  ██      ██  ▀████▀")
+		print ("        ██")
+		print ("        █")
+		print ()
+		print ("############################################################")
+		print ()
+		print ("Domyślne sterowanie:")
+		print ()
+		print ("Start: Enter")
+		print ("Zmień tryb gry: Prawy Shift")
+		print ()
+		print ("Gracz 1:")
+		print ("Poruszanie: ← ↓ →")
+		print ("Obrót zgodnie z ruchem zegarem: L")
+		print ("Obrót przeciwnie do ruchu zegara: K")
+		print ()
+		print ("Gracz 2:")
+		print ("Poruszanie: V B N")
+		print ("Obrót zgodnie z ruchem zegarem: L")
+		print ("Obrót przeciwnie do ruchu zegara: K")
+		
 		self.Intro ()
 		
 		# główna pętla
@@ -140,6 +160,26 @@ class Temtris () :
 			self.Gra ()
 			self.KoniecGry ()
 	
+	def OdświeżOkno (self) :
+		
+		for event in pygame.event.get() :
+			# naciśnięcie X na oknie
+			if event.type == QUIT:
+				pygame.quit ()
+				exit ()
+			elif event.type == VIDEORESIZE:
+				self.okno = pygame.display.set_mode((event.size[1] * self.proporcjeObrazu, event.size[1]), HWSURFACE|DOUBLEBUF|RESIZABLE)
+		
+		klawisze = pygame.key.get_pressed ()
+		for klawisz in self.klawisze :
+			
+			self.poprzednieKlawisze[klawisz] = self.klawisze[klawisz]
+			self.klawisze[klawisz] = klawisze[klawisz]
+		
+		self.okno.blit (pygame.transform.scale (self.obraz, self.okno.get_rect ().size), (0, 0))
+		pygame.display.update ()
+		self.zegar.tick (self.fps)
+		
 	# ###########################
 	#            INTRO
 	# ###########################
@@ -155,7 +195,7 @@ class Temtris () :
 		for i in range (0, 4) :
 			
 			# rysuj na ekranie logo
-			self.okno.blit(self.introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
+			self.obraz.blit(self.introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
 			
 			if not self.CzekajLubPomiń (32) :
 				return
@@ -183,68 +223,44 @@ class Temtris () :
 	def Menu (self) :
 		
 		# wyzeruj zmienne sterujące grą
-		self.pauza = False
-		self.poziom = 0
-		self.liczbaLinii = [0, 0]
-		self.liczbaLiniiCheems = [0, 0]
-		self.liczbaLiniiDoge = [0, 0]
-		self.liczbaLiniiBuffDoge = [0, 0]
-		self.liczbaLiniiTemtris = [0, 0]
-		self.liczbaPunktów = [0, 0]
-		self.czasGry = 0
-		self.dwóchGraczy = False
-		self.obecnyGracz = 0
-		self.zegarKontrolera = 10
-		self.zegarKontroleraObrót = 10
-		self.szybkośćOpadaniaKlocka = 60
-		self.zegarOpadania = 60
-		self.poprzednieKlawisze = []
-		
-		self.plansza = self.Plansza (self)
+		self.WyzerujZmienneSterujące ()
 		
 		# załaduj tło menu
-		self.okno.blit (self.tłoMenu, self.tłoMenu.get_rect())
+		self.obraz.blit (self.tłoMenu, self.tłoMenu.get_rect())
 		
 		# utwórz strzałkę wskazującą na gre dla 1 lub 2 graczy
 		strzałka = self.Strzałka (self, 5, 20)
 		
 		wszystkieSprite = pygame.sprite.Group()
 		wszystkieSprite.add (strzałka)
-		wszystkieSprite.draw (self.okno)
+		wszystkieSprite.draw (self.obraz)
 		
 		# odtwarzaj muzykę w menu
 		pygame.mixer.music.load ("Assets/Dzwiek/temtris theme.ogg")
 		pygame.mixer.music.play (-1)
 		
+		self.OdświeżOkno ()
+		
 		while True :
 			
-			for event in pygame.event.get() :
+			# START
+			if self.NaciśniętoKlawisz (self.START1) or self.NaciśniętoKlawisz (self.START2) :
+				return
+			# SELECT
+			elif self.NaciśniętoKlawisz (self.SELECT1) or self.NaciśniętoKlawisz (self.SELECT2) :
+				self.dwóchGraczy = not self.dwóchGraczy
 				
-				# naciśnięcie X na oknie
-				if event.type == QUIT :
-					pygame.quit ()
-					exit ()
+				# narysuj tło
+				self.obraz.blit (self.tłoMenu, self.tłoMenu.get_rect())
 				
-				# naciśnięcie klawisza
-				if event.type == KEYDOWN :
-					# START
-					if event.key == (self.START1 or self.START2) :
-						return
-					elif event.key == (self.SELECT1 or self.SELECT2) :
-						self.dwóchGraczy = not self.dwóchGraczy
-						
-						# narysuj tło
-						self.okno.blit (self.tłoMenu, self.tłoMenu.get_rect())
-						
-						if self.dwóchGraczy :
-							strzałka.rect.y += self.Y
-						else :
-							strzałka.rect.y -= self.Y
-						
-						wszystkieSprite.draw (self.okno)
-			
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+				if self.dwóchGraczy :
+					strzałka.rect.y += self.Y
+				else :
+					strzałka.rect.y -= self.Y
+				
+				wszystkieSprite.draw (self.obraz)
+				
+			self.OdświeżOkno ()
 	
 	# ###########################
 	#             GRA
@@ -379,7 +395,7 @@ class Temtris () :
 					if sprite != None :
 						wszystkieSprite.add (sprite)
 			
-			wszystkieSprite.draw (self.temtris.okno)
+			wszystkieSprite.draw (self.temtris.obraz)
 		
 		def Odśwież (self) :
 			for i in self.macierzSpriteów :
@@ -479,17 +495,17 @@ class Temtris () :
 			# odtwórz animację
 			for x in range (0, 32) :
 				
-				spriteAnimacji.draw (self.temtris.okno)
+				spriteAnimacji.draw (self.temtris.obraz)
 				
-				pygame.display.update ()
-				self.temtris.zegar.tick (self.temtris.fps)
+				self.temtris.OdświeżOkno ()
 				
 				for sprite in spriteAnimacji :
 					sprite.NastępnaKlatka ()
 			
-			# zmień grafiki
-			
+			# usuń linie i utwórz nową na górze
 			for numerLinii in linieDoRozbicia :
+				
+				# zmień grafiki
 				if numerLinii - 1 >= 0 :
 					for x in range (0, 10) :
 						if self.macierzSpriteów [numerLinii - 1][x] != None :
@@ -499,9 +515,7 @@ class Temtris () :
 					for x in range (0, 10) :
 						if self.macierzSpriteów [numerLinii + 1][x] != None :
 							self.macierzSpriteów[numerLinii + 1][x].UstawGrafikę (self.macierzSpriteów[numerLinii + 1][x].numerFragmentu & 7)
-			
-			# usuń linie i utwórz nowe na górze
-			for numerLinii in linieDoRozbicia :
+				
 				del self.macierzSpriteów [numerLinii]
 				self.macierzSpriteów.insert (0, [])
 				for _ in range (0, 10) :
@@ -544,7 +558,7 @@ class Temtris () :
 				grafika.set_colorkey ((0, 0, 0))
 				
 				self.image = grafika
-						
+				
 		class AnimacjaRozbijanejLinii (pygame.sprite.Sprite) :
 			"""Reprezentuje pojedynczy animowany pasek podczas rozbijania linii"""
 			
@@ -588,6 +602,7 @@ class Temtris () :
 	
 	def PrzełączPauze (self) :
 		
+		self.OdświeżOkno ()
 		pygame.mixer.music.pause ()
 		
 		sprity = pygame.sprite.Group ()
@@ -596,20 +611,12 @@ class Temtris () :
 		
 		self.pauza = True
 		while self.pauza :
-			for event in pygame.event.get() :
-						
-				# naciśnięcie X na oknie
-				if event.type == QUIT:
-					pygame.quit ()
-					exit ()
-				
-				if event.type == KEYDOWN :
-					if event.key == (self.START1 or self.START2) :
-						self.pauza = False
 			
-			sprity.draw (self.okno)
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+			if self.NaciśniętoKlawisz (self.START1) or self.NaciśniętoKlawisz (self.START2) :
+				self.pauza = False
+			
+			sprity.draw (self.obraz)
+			self.OdświeżOkno ()
 		
 		pygame.mixer.music.unpause ()
 	
@@ -662,14 +669,17 @@ class Temtris () :
 		else :
 			tłoGra = self.tłoGra
 		
-		self.okno.blit (tłoGra, tłoGra.get_rect())
+		self.obraz.blit (tłoGra, tłoGra.get_rect())
 		
 		while True :
+			
+			# musimy lekko opóźnić koniec gry żeby ostatni raz narysować sprite
+			koniecGry = False
 			
 			# stwórz obecny i następny klocek
 			obecnyKlocek = następnyKolcek[self.obecnyGracz]
 			if not obecnyKlocek.UstawPozycję (13, 5) :
-				break
+				koniecGry = True
 			następnyKolcek[self.obecnyGracz] = self.Klocek (self)
 			if self.obecnyGracz == 0 :
 				następnyKolcek[self.obecnyGracz].UstawPozycję (4, 4)
@@ -681,10 +691,23 @@ class Temtris () :
 			wszystkieSprite.add (następnyKolcek[0])
 			if self.dwóchGraczy :
 				wszystkieSprite.add (następnyKolcek[1])
-			wszystkieSprite.draw (self.okno)
+			
+			self.obraz.blit (tłoGra, tłoGra.get_rect())
+			self.plansza.Rysuj ()
+			wszystkieSprite.draw (self.obraz)
+				
+			for licznik in licznikLinii :
+				licznik.Rysuj ()
+			for licznik in licznikPunktów :
+				licznik.Rysuj ()
+			
+			if koniecGry :
+				break
 			
 			# opadanie klocka
 			self.zegarOpadania = self.szybkośćOpadaniaKlocka
+			
+			self.OdświeżOkno ()
 			
 			while True :
 				
@@ -694,44 +717,28 @@ class Temtris () :
 					if not obecnyKlocek.Opadaj () :
 						break
 				
-				for event in pygame.event.get() :
-					
-					# naciśnięcie X na oknie
-					if event.type == QUIT:
-						pygame.quit ()
-						exit ()
-					
-					if event.type == KEYDOWN:
-						if event.key == (self.SELECT1 or self.SELECT2) :
-							self.NastępnaMelodia ()
-						if event.key == (self.START1 or self.START2) :
-							self.PrzełączPauze ()
-				
-				klawisze = pygame.key.get_pressed ()
-				
 				# przetwarzanie ruchu
 				if self.zegarKontrolera > 0 :
 					self.zegarKontrolera -= 1
 				
-				# TODO jeśli naciśnięto to pierwszy raz powinien być dłuższy cooldown
 				if self.zegarKontrolera == 0 :
 					
 					# RIGHT
-					if self.obecnyGracz == 0 and klawisze[self.RIGHT1] or self.obecnyGracz == 1 and klawisze[self.RIGHT2] :
+					if self.obecnyGracz == 0 and self.klawisze[self.RIGHT1] or self.obecnyGracz == 1 and self.klawisze[self.RIGHT2] :
 						obecnyKlocek.PrzesuńWPrawo ()
 						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.RIGHT1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.RIGHT2] :
 							self.zegarKontrolera = 3
 						else :
 							self.zegarKontrolera = 10
 					# LEFT
-					elif self.obecnyGracz == 0 and klawisze[self.LEFT1] or self.obecnyGracz == 1 and klawisze[self.LEFT2] :
+					elif self.obecnyGracz == 0 and self.klawisze[self.LEFT1] or self.obecnyGracz == 1 and self.klawisze[self.LEFT2] :
 						obecnyKlocek.PrzesuńWLewo ()
 						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.LEFT1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.LEFT2] :
 							self.zegarKontrolera = 3
 						else :
 							self.zegarKontrolera = 10
 					# DOWN
-					elif self.obecnyGracz == 0 and klawisze[self.DOWN1] or self.obecnyGracz == 1 and klawisze[self.DOWN2] :
+					elif self.obecnyGracz == 0 and self.klawisze[self.DOWN1] or self.obecnyGracz == 1 and self.klawisze[self.DOWN2] :
 						self.zegarOpadania = self.szybkośćOpadaniaKlocka
 						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.DOWN1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.DOWN2] :
 							self.zegarKontrolera = 3
@@ -740,25 +747,28 @@ class Temtris () :
 						if not obecnyKlocek.Opadaj () :
 							break
 				
+				if self.NaciśniętoKlawisz (self.SELECT1) or self.NaciśniętoKlawisz (self.SELECT2) :
+					self.NastępnaMelodia ()
+				if self.NaciśniętoKlawisz (self.START1) or self.NaciśniętoKlawisz (self.START2) :
+					self.PrzełączPauze ()
+				
 				# przetwarzanie obrotu
 				if self.zegarKontroleraObrót > 0 :
 					self.zegarKontroleraObrót -= 1
 					
 				if self.zegarKontroleraObrót == 0 :
 					
-					if self.obecnyGracz == 0 and klawisze[self.A1] or self.obecnyGracz == 1 and klawisze[self.A2] :
+					if self.obecnyGracz == 0 and self.klawisze[self.A1] or self.obecnyGracz == 1 and self.klawisze[self.A2] :
 						obecnyKlocek.ObróćWPrawo ()
 						self.zegarKontroleraObrót = 10
-					elif self.obecnyGracz == 0 and klawisze[self.B1] or self.obecnyGracz == 1 and klawisze[self.B2] :
+					elif self.obecnyGracz == 0 and self.klawisze[self.B1] or self.obecnyGracz == 1 and self.klawisze[self.B2] :
 						obecnyKlocek.ObróćWLewo ()
 						self.zegarKontroleraObrót = 10
-					
-				self.poprzednieKlawisze = klawisze
 				
 				self.OdtwarzajMuzykę ()
 				
-				self.okno.blit (tłoGra, tłoGra.get_rect())
-				wszystkieSprite.draw (self.okno)
+				self.obraz.blit (tłoGra, tłoGra.get_rect())
+				wszystkieSprite.draw (self.obraz)
 				self.plansza.Rysuj ()
 					
 				for licznik in licznikLinii :
@@ -769,22 +779,25 @@ class Temtris () :
 				# policz klatkę czasu gry
 				self.czasGry += 1
 				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
+				self.OdświeżOkno ()
 			
 			# umieszczanie klocka
 			self.plansza.UmieśćKlocek (obecnyKlocek.UtwórzMacierzKolizji (obecnyKlocek.image), obecnyKlocek.x, obecnyKlocek.y)
+			
+			# usuń sprite obecnego klocka z ekranu
+			self.plansza.Rysuj ()
 			
 			# sprawdzanie linii
 			linieDoRozbicia = self.plansza.SprawdźRozbicieLinii ()
 			
 			if len (linieDoRozbicia) > 0 :
 				
+				# sprawdź czy zmienić poziom
 				if self.dwóchGraczy :
-					if self.liczbaLinii[0] % 30 + len (linieDoRozbicia) >= 30 :
+					if (self.liczbaLinii[0] + self.liczbaLinii[1]) % 30 + len (linieDoRozbicia) >= 30 :
 						self.NastępnyPoziom ()
 				else :
-					if (self.liczbaLinii[0] + self.liczbaLinii[1]) % 30 + len (linieDoRozbicia) >= 30 :
+					if self.liczbaLinii[0] % 30 + len (linieDoRozbicia) >= 30 :
 						self.NastępnyPoziom ()
 				
 				self.plansza.RozbijLinie (linieDoRozbicia)
@@ -795,22 +808,20 @@ class Temtris () :
 			self.czasGry += 1
 			
 			# odśwież ekran
-			self.okno.blit (tłoGra, tłoGra.get_rect())
-			wszystkieSprite.draw (self.okno)
+			self.obraz.blit (tłoGra, tłoGra.get_rect())
+			wszystkieSprite.draw (self.obraz)
 			self.plansza.Rysuj ()
 			
 			for licznik in licznikLinii :
 				licznik.Rysuj ()
 			for licznik in licznikPunktów :
 				licznik.Rysuj ()
-				
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
 			
 			# zmień gracza
 			if self.dwóchGraczy :
 				self.obecnyGracz = 1 - self.obecnyGracz
 			
+			self.OdświeżOkno ()
 
 	# ###########################
 	#         KONIEC GRY
@@ -862,15 +873,13 @@ class Temtris () :
 			pygame.mixer.music.load ("Assets/Dzwiek/koniec gry.ogg")
 			pygame.mixer.music.play ()
 			
-			self.okno.blit (self.koniecGryKlatka1, self.koniecGryKlatka1.get_rect())
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+			self.obraz.blit (self.koniecGryKlatka1, self.koniecGryKlatka1.get_rect())
+			self.OdświeżOkno ()
 			
 			self.Czekaj (84)
 			
-			self.okno.blit (koniecGryKlatka2, koniecGryKlatka2.get_rect())
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
+			self.obraz.blit (koniecGryKlatka2, koniecGryKlatka2.get_rect())
+			self.OdświeżOkno ()
 			
 			liczniki = []
 			
@@ -925,55 +934,12 @@ class Temtris () :
 			
 				for licznik in liczniki :
 					licznik.Rysuj ()
-				ikony.draw (self.okno)
+				ikony.draw (self.obraz)
 				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
-			
-				for event in pygame.event.get() :
-					# naciśnięcie X na oknie
-					if event.type == QUIT:
-						pygame.quit ()
-						exit ()
-						
-					if event.type == KEYDOWN :
-						if event.key == (self.START1 or self.START2) :
-							return
+				if self.NaciśniętoKlawisz (self.START1) or self.NaciśniętoKlawisz (self.START2) :
+					return
 				
-	# #######################
-	#       PRZYDATNE
-	# #######################
-	
-	def Czekaj (self, klatki) :
-		for _ in range (0, klatki) :
-			
-			for event in pygame.event.get() :
-				# naciśnięcie X na oknie
-				if event.type == QUIT:
-					pygame.quit ()
-					exit ()
-					
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
-	
-	def CzekajLubPomiń (self, klatki) :
-		for _ in range (0, klatki) :
-			for event in pygame.event.get() :
-				
-				# naciśnięcie X na oknie
-				if event.type == QUIT:
-					pygame.quit ()
-					exit ()
-					
-				if event.type == KEYDOWN :
-					# START
-					if event.key == (self.START1 or self.START2) :
-						return False
-			
-			pygame.display.update ()
-			self.zegar.tick (self.fps)
-		
-		return True
+				self.OdświeżOkno ()
 	
 	# #######################
 	#        LICZNIKI
@@ -1007,7 +973,7 @@ class Temtris () :
 			for cyfra in self.cyfry :
 				cyfry.add (cyfra)
 				
-			cyfry.draw (self.temtris.okno)
+			cyfry.draw (self.temtris.obraz)
 			
 		class Cyfra (pygame.sprite.Sprite) :
 		
@@ -1026,7 +992,50 @@ class Temtris () :
 				grafika.blit (self.temtris.cyfrySprite, Rect (0, 0, 32, 32), Rect (cyfra * 32, 0, 32, 32))
 				grafika.set_colorkey ((0, 0, 0))
 				self.image = grafika
-
+	
+	# #######################
+	#       PRZYDATNE
+	# #######################
+	
+	def Czekaj (self, klatki) :
+		for _ in range (0, klatki) :
+			self.OdświeżOkno ()
+	
+	def CzekajLubPomiń (self, klatki) :
+		for _ in range (0, klatki) :
+			
+			if self.NaciśniętoKlawisz (self.START1) or self.NaciśniętoKlawisz (self.START2) :
+				return False
+				
+			self.OdświeżOkno ()
+		
+		return True
+		
+	def NaciśniętoKlawisz (self, klawisz) :
+		
+		if self.klawisze[klawisz] and not self.poprzednieKlawisze[klawisz] :
+			return True
+		else :
+			return False
+	
+	def WyzerujZmienneSterujące (self) :
+		self.pauza = False
+		self.poziom = 0
+		self.liczbaLinii = [0, 0]
+		self.liczbaLiniiCheems = [0, 0]
+		self.liczbaLiniiDoge = [0, 0]
+		self.liczbaLiniiBuffDoge = [0, 0]
+		self.liczbaLiniiTemtris = [0, 0]
+		self.liczbaPunktów = [0, 0]
+		self.czasGry = 0
+		self.dwóchGraczy = False
+		self.obecnyGracz = 0
+		self.zegarKontrolera = 10
+		self.zegarKontroleraObrót = 10
+		self.szybkośćOpadaniaKlocka = 60
+		self.zegarOpadania = 60
+		self.plansza = self.Plansza (self)
+	
 def Main () :
 	temtris = Temtris ()
 	temtris.Start ()
