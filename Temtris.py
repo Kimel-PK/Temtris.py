@@ -21,6 +21,9 @@
 #                                                                                              Kimel_PK
 # #####################################################################################################
 
+# TODO czemu grafika nie zawsze się aktualizuje po rozbiciu linii?
+# TODO wyświetlanie obecnego klocka po tym jak zobaczymy game over
+
 import pygame
 from pygame.locals import *
 from random import randrange
@@ -74,8 +77,10 @@ class Temtris () :
 		self.dwóchGraczy = False
 		self.obecnyGracz = 0
 		self.zegarKontrolera = 10
+		self.zegarKontroleraObrót = 10
 		self.szybkośćOpadaniaKlocka = 60
 		self.zegarOpadania = 60
+		self.poprzednieKlawisze = []
 		
 		self.plansza = self.Plansza (self)
 		
@@ -190,8 +195,10 @@ class Temtris () :
 		self.dwóchGraczy = False
 		self.obecnyGracz = 0
 		self.zegarKontrolera = 10
+		self.zegarKontroleraObrót = 10
 		self.szybkośćOpadaniaKlocka = 60
 		self.zegarOpadania = 60
+		self.poprzednieKlawisze = []
 		
 		self.plansza = self.Plansza (self)
 		
@@ -677,14 +684,15 @@ class Temtris () :
 			wszystkieSprite.draw (self.okno)
 			
 			# opadanie klocka
+			self.zegarOpadania = self.szybkośćOpadaniaKlocka
 			
 			while True :
 				
 				self.zegarOpadania -= 1
 				if self.zegarOpadania == 0 :
+					self.zegarOpadania = self.szybkośćOpadaniaKlocka
 					if not obecnyKlocek.Opadaj () :
 						break
-					self.zegarOpadania = self.szybkośćOpadaniaKlocka
 				
 				for event in pygame.event.get() :
 					
@@ -701,29 +709,51 @@ class Temtris () :
 				
 				klawisze = pygame.key.get_pressed ()
 				
+				# przetwarzanie ruchu
 				if self.zegarKontrolera > 0 :
 					self.zegarKontrolera -= 1
 				
 				# TODO jeśli naciśnięto to pierwszy raz powinien być dłuższy cooldown
 				if self.zegarKontrolera == 0 :
 					
-					if self.obecnyGracz == 0 and klawisze[self.A1] or self.obecnyGracz == 1 and klawisze[self.A2] :
-						obecnyKlocek.ObróćWPrawo ()
-						self.zegarKontrolera = 2
-					elif self.obecnyGracz == 0 and klawisze[self.B1] or self.obecnyGracz == 1 and klawisze[self.B2] :
-						obecnyKlocek.ObróćWLewo ()
-						self.zegarKontrolera = 2
-					elif self.obecnyGracz == 0 and klawisze[self.DOWN1] or self.obecnyGracz == 1 and klawisze[self.DOWN2] :
-						if not obecnyKlocek.Opadaj () :
-							break
-						self.zegarKontrolera = 2
-					
+					# RIGHT
 					if self.obecnyGracz == 0 and klawisze[self.RIGHT1] or self.obecnyGracz == 1 and klawisze[self.RIGHT2] :
 						obecnyKlocek.PrzesuńWPrawo ()
-						self.zegarKontrolera = 2
+						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.RIGHT1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.RIGHT2] :
+							self.zegarKontrolera = 3
+						else :
+							self.zegarKontrolera = 10
+					# LEFT
 					elif self.obecnyGracz == 0 and klawisze[self.LEFT1] or self.obecnyGracz == 1 and klawisze[self.LEFT2] :
 						obecnyKlocek.PrzesuńWLewo ()
-						self.zegarKontrolera = 2
+						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.LEFT1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.LEFT2] :
+							self.zegarKontrolera = 3
+						else :
+							self.zegarKontrolera = 10
+					# DOWN
+					elif self.obecnyGracz == 0 and klawisze[self.DOWN1] or self.obecnyGracz == 1 and klawisze[self.DOWN2] :
+						self.zegarOpadania = self.szybkośćOpadaniaKlocka
+						if self.obecnyGracz == 0 and self.poprzednieKlawisze[self.DOWN1] or self.obecnyGracz == 1 and self.poprzednieKlawisze[self.DOWN2] :
+							self.zegarKontrolera = 3
+						else :
+							self.zegarKontrolera = 10
+						if not obecnyKlocek.Opadaj () :
+							break
+				
+				# przetwarzanie obrotu
+				if self.zegarKontroleraObrót > 0 :
+					self.zegarKontroleraObrót -= 1
+					
+				if self.zegarKontroleraObrót == 0 :
+					
+					if self.obecnyGracz == 0 and klawisze[self.A1] or self.obecnyGracz == 1 and klawisze[self.A2] :
+						obecnyKlocek.ObróćWPrawo ()
+						self.zegarKontroleraObrót = 10
+					elif self.obecnyGracz == 0 and klawisze[self.B1] or self.obecnyGracz == 1 and klawisze[self.B2] :
+						obecnyKlocek.ObróćWLewo ()
+						self.zegarKontroleraObrót = 10
+					
+				self.poprzednieKlawisze = klawisze
 				
 				self.OdtwarzajMuzykę ()
 				
@@ -865,8 +895,8 @@ class Temtris () :
 			# czas gry
 			liczniki.append (self.Liczba (self, 3, 10, 25))
 			liczniki.append (self.Liczba (self, 2, 14, 25))
-			liczniki[7].Ustaw (self.czasGry // 3600)
-			liczniki[6].Ustaw (self.czasGry // 60 % 60)
+			liczniki[6].Ustaw (self.czasGry // 3600)
+			liczniki[7].Ustaw (self.czasGry // 60 % 60)
 			
 			# statystyki gracza 2
 			if self.dwóchGraczy :
