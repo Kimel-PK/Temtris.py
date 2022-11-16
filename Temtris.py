@@ -579,10 +579,13 @@ class Temtris () :
 			self.rect.x = x * temtris.X
 			self.rect.y = y * temtris.Y
 	
-	def Pauza (self) :
+	def PrzełączPauze (self) :
 		
-		self.mixer.music.Pause ()
-		pauza = self.Pauza (4, 4)
+		pygame.mixer.music.pause ()
+		
+		sprity = pygame.sprite.Group ()
+		pauza = self.Pauza (self, 12, 2)
+		sprity.add (pauza)
 		
 		self.pauza = True
 		while self.pauza :
@@ -597,11 +600,12 @@ class Temtris () :
 					if event.key == (self.START1 or self.START2) :
 						self.pauza = False
 			
+			sprity.draw (self.okno)
 			pygame.display.update ()
 			self.zegar.tick (self.fps)
 		
-		self.mixer.music.Resume ()
-		
+		pygame.mixer.music.unpause ()
+	
 	def OdtwarzajMuzykę (self) :
 		
 		if not pygame.mixer.music.get_busy () :
@@ -693,7 +697,7 @@ class Temtris () :
 						if event.key == (self.SELECT1 or self.SELECT2) :
 							self.NastępnaMelodia ()
 						if event.key == (self.START1 or self.START2) :
-							self.Pauza ()
+							self.PrzełączPauze ()
 				
 				klawisze = pygame.key.get_pressed ()
 				
