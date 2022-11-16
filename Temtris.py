@@ -89,21 +89,30 @@ class Temtris () :
 		pygame.display.set_caption ("Temtris.py")
 		
 		# dźwięk i muzyka
-		self.uderzenieSFX = pygame.mixer.Sound("Assets/Dźwięk/uderzenie.ogg")
+		self.uderzenieSFX = pygame.mixer.Sound("Assets/Dzwiek/uderzenie.ogg")
 		
-		self.cheemsSFX = pygame.mixer.Sound("Assets/Dźwięk/cheems.ogg")
-		self.dogeSFX = pygame.mixer.Sound("Assets/Dźwięk/doge.ogg")
-		self.buffdogeSFX = pygame.mixer.Sound("Assets/Dźwięk/buffdoge.ogg")
-		self.temtrisSFX = pygame.mixer.Sound("Assets/Dźwięk/temtris.ogg")
+		self.cheemsSFX = pygame.mixer.Sound("Assets/Dzwiek/cheems.ogg")
+		self.dogeSFX = pygame.mixer.Sound("Assets/Dzwiek/doge.ogg")
+		self.buffdogeSFX = pygame.mixer.Sound("Assets/Dzwiek/buffdoge.ogg")
+		self.temtrisSFX = pygame.mixer.Sound("Assets/Dzwiek/temtris.ogg")
 		
 		self.muzyka = [
-			"Assets/Dźwięk/Never Gonna Give You Up NES APU cover.ogg",
-			"Assets/Dźwięk/Together Forever NES APU cover.ogg",
-			"Assets/Dźwięk/Song For Denise NES APU cover.ogg",
-			"Assets/Dźwięk/Szanty Bitwa NES APU cover.ogg"
+			"Assets/Dzwiek/Never Gonna Give You Up NES APU cover.ogg",
+			"Assets/Dzwiek/Together Forever NES APU cover.ogg",
+			"Assets/Dzwiek/Song For Denise NES APU cover.ogg",
+			"Assets/Dzwiek/Szanty Bitwa NES APU cover.ogg"
 		]
 		
 		# grafika
+		self.tłoMenu = pygame.image.load ("Assets/Grafika/menu.png")
+		self.tłoGra = pygame.image.load ("Assets/Grafika/gra.png")
+		self.tłoGra2Graczy = pygame.image.load ("Assets/Grafika/gra dwoch graczy.png")
+		self.koniecGryKlatka1 = pygame.image.load ("Assets/Grafika/koniec gry klatka 1.png")
+		self.koniecGryKlatka2 = pygame.image.load ("Assets/Grafika/koniec gry klatka 2.png")
+		self.koniecGryKlatka2dwochGraczy = pygame.image.load ("Assets/Grafika/koniec gry klatka 2 dwoch graczy.png")
+		
+		self.introSprite = pygame.image.load ("Assets/Grafika/intro sprite.png")
+		self.strzałkaSprite = pygame.image.load ("Assets/Grafika/strzalka.png")
 		self.klockiSprite = pygame.image.load ("Assets/Grafika/klocki sprite.png").convert_alpha ()
 		self.klockiSpriteGracz1 = pygame.image.load ("Assets/Grafika/klocki sprite gracz 1.png").convert_alpha ()
 		self.klockiSpriteGracz2 = pygame.image.load ("Assets/Grafika/klocki sprite gracz 2.png").convert_alpha ()
@@ -135,15 +144,13 @@ class Temtris () :
 		if not self.CzekajLubPomiń (32) :
 			return
 		
-		introSprite = pygame.image.load ("Assets/Grafika/intro sprite.png")
-		
-		pygame.mixer.music.load ("Assets/Dźwięk/intro.ogg")
+		pygame.mixer.music.load ("Assets/Dzwiek/intro.ogg")
 		pygame.mixer.music.play ()
 		
 		for i in range (0, 4) :
 			
 			# rysuj na ekranie logo
-			self.okno.blit(introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
+			self.okno.blit(self.introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
 			
 			if not self.CzekajLubPomiń (32) :
 				return
@@ -160,11 +167,13 @@ class Temtris () :
 	class Strzałka (pygame.sprite.Sprite) :
 		"""Reprezentuje sprite strzałki w menu, służącej do wyboru trybu gry"""
 		
-		def __init__(self) :
+		def __init__(self, temtris, x, y) :
 			super().__init__()
 			
-			self.image = pygame.image.load ("Assets/Grafika/strzałka.png")
+			self.image = temtris.strzałkaSprite
 			self.rect = self.image.get_rect()
+			self.rect.x = x * temtris.X - 2 * temtris.PX
+			self.rect.y = y * temtris.Y
 	
 	def Menu (self) :
 		
@@ -187,21 +196,17 @@ class Temtris () :
 		self.plansza = self.Plansza (self)
 		
 		# załaduj tło menu
-		tłoMenu = pygame.image.load ("Assets/Grafika/menu.png")
-		self.okno.blit (tłoMenu, tłoMenu.get_rect())
+		self.okno.blit (self.tłoMenu, self.tłoMenu.get_rect())
 		
 		# utwórz strzałkę wskazującą na gre dla 1 lub 2 graczy
-		strzałka = self.Strzałka ()
-		strzałka.rect.x = 5 * self.X - 2 * self.PX
-		strzałka.rect.y = 20 * self.Y
+		strzałka = self.Strzałka (self, 5, 20)
 		
-		# TODO skoro jest jeden sprite to czy da się to nie robić grupą?
 		wszystkieSprite = pygame.sprite.Group()
 		wszystkieSprite.add (strzałka)
 		wszystkieSprite.draw (self.okno)
 		
 		# odtwarzaj muzykę w menu
-		pygame.mixer.music.load ("Assets/Dźwięk/temtris theme.ogg")
+		pygame.mixer.music.load ("Assets/Dzwiek/temtris theme.ogg")
 		pygame.mixer.music.play (-1)
 		
 		while True :
@@ -222,7 +227,7 @@ class Temtris () :
 						self.dwóchGraczy = not self.dwóchGraczy
 						
 						# narysuj tło
-						self.okno.blit (tłoMenu, tłoMenu.get_rect())
+						self.okno.blit (self.tłoMenu, self.tłoMenu.get_rect())
 						
 						if self.dwóchGraczy :
 							strzałka.rect.y += self.Y
@@ -300,50 +305,56 @@ class Temtris () :
 			if self.temtris.plansza.SprawdźKolizję (self.UtwórzMacierzKolizji (self.image), self.x, self.y + 1) :
 				return False
 			else :
-				self.rect.y += self.temtris.Y
 				self.y += 1
+				self.rect.y += self.temtris.Y
 				
 				return True
 		
 		def PrzesuńWPrawo (self) :
 			
 			if not self.temtris.plansza.SprawdźKolizję (self.UtwórzMacierzKolizji (self.image), self.x + 1, self.y) :
-				self.rect.x += self.temtris.X
 				self.x += 1
+				self.rect.x += self.temtris.X
 			
 		def PrzesuńWLewo (self) :
 			
 			if not self.temtris.plansza.SprawdźKolizję (self.UtwórzMacierzKolizji (self.image), self.x - 1, self.y) :
-				self.rect.x -= self.temtris.X
 				self.x -= 1
+				self.rect.x -= self.temtris.X
 		
 		def ObróćWPrawo (self) :
 			
-			# TODO obrót z przesunięciem
-			
 			obrót = (self.obrót + 1) % 4
-			
 			macierzKolizji = self.UtwórzMacierzKolizji (self.UtwórzGrafike (obrót, self.numerKlocka))
-			
 			self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
 			
 			if not self.temtris.plansza.SprawdźKolizję (macierzKolizji, self.x, self.y) :
 				self.obrót = (self.obrót + 1) % 4
 				self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
+			else :
+				# obrót z przesunięciem
+				if not self.temtris.plansza.SprawdźKolizję (macierzKolizji, self.x - 1, self.y) :
+					self.x -= 1
+					self.rect.x -= self.temtris.X
+					self.obrót = (self.obrót + 1) % 4
+					self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
 			
 		def ObróćWLewo (self) :
 			
-			# TODO obrót z przesunięciem
-			
 			obrót = (self.obrót - 1) % 4
-			
 			macierzKolizji = self.UtwórzMacierzKolizji (self.UtwórzGrafike (obrót, self.numerKlocka))
-			
 			self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
 			
 			if not self.temtris.plansza.SprawdźKolizję (macierzKolizji, self.x, self.y) :
 				self.obrót = (self.obrót - 1) % 4
 				self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
+			else :
+				# obrót z przesunięciem
+				if not self.temtris.plansza.SprawdźKolizję (macierzKolizji, self.x + 1, self.y) :
+					self.x += 1
+					self.rect.x += self.temtris.X
+					self.obrót = (self.obrót - 1) % 4
+					self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
 			
 	class Plansza () :
 		"""Reprezentuje plansze, na której rozgrywa się gra"""
@@ -552,10 +563,26 @@ class Temtris () :
 				grafika.set_colorkey ((0, 255, 0))
 				
 				self.image = grafika
-
+	
+	class Pauza (pygame.sprite.Sprite) :
+		"""Tekst wyświetlany na ekranie podczas trwania pauzy"""
+		
+		def __init__ (self, temtris, x, y) :
+			super ().__init__ ()
+			
+			grafika = pygame.Surface((192, 32)).convert_alpha ()
+			grafika.blit (temtris.pauzaSprite, Rect (0, 0, 192, 32), Rect (0, 0, 192, 32))
+			grafika.set_colorkey ((0, 0, 0))
+			
+			self.image = grafika
+			self.rect = self.image.get_rect ()
+			self.rect.x = x * temtris.X
+			self.rect.y = y * temtris.Y
+	
 	def Pauza (self) :
 		
 		self.mixer.music.Pause ()
+		pauza = self.Pauza (4, 4)
 		
 		self.pauza = True
 		while self.pauza :
@@ -610,9 +637,9 @@ class Temtris () :
 		
 		if self.dwóchGraczy :
 			
-			self.obecnyGracz = 1
+			tłoGra = self.tłoGra2Graczy
 			
-			tłoGra = pygame.image.load ("Assets/Grafika/gra dwóch graczy.png")
+			self.obecnyGracz = 1
 			
 			licznikLinii.append (self.Liczba (self, 4, 21, 9))
 			licznikPunktów.append (self.Liczba (self, 4, 21, 12))
@@ -622,7 +649,7 @@ class Temtris () :
 			
 			self.obecnyGracz = 0
 		else :
-			tłoGra = pygame.image.load ("Assets/Grafika/gra.png")
+			tłoGra = self.tłoGra
 		
 		self.okno.blit (tłoGra, tłoGra.get_rect())
 		
@@ -793,16 +820,15 @@ class Temtris () :
 			
 			self.Czekaj (64)
 			
-			koniecGryKlatka1 = pygame.image.load ("Assets/Grafika/koniec gry klatka 1.png")
 			if self.dwóchGraczy :
-				koniecGryKlatka2 = pygame.image.load ("Assets/Grafika/koniec gry klatka 2 dwóch graczy.png")
+				koniecGryKlatka2 = self.koniecGryKlatka2dwochGraczy
 			else :
-				koniecGryKlatka2 = pygame.image.load ("Assets/Grafika/koniec gry klatka 2.png")
+				koniecGryKlatka2 = self.koniecGryKlatka2
 			
-			pygame.mixer.music.load ("Assets/Dźwięk/koniec gry.ogg")
+			pygame.mixer.music.load ("Assets/Dzwiek/koniec gry.ogg")
 			pygame.mixer.music.play ()
 			
-			self.okno.blit (koniecGryKlatka1, koniecGryKlatka1.get_rect())
+			self.okno.blit (self.koniecGryKlatka1, self.koniecGryKlatka1.get_rect())
 			pygame.display.update ()
 			self.zegar.tick (self.fps)
 			
