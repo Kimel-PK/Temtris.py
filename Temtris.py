@@ -32,9 +32,7 @@ class Temtris () :
 		# podstawowe ustawienia
 		self.szerokośćOkna = 1024
 		self.wysokośćOkna = 896
-		self.zegar = None
-		self.okno = None
-		self.fps = 30
+		self.fps = 60
 		
 		self.PX = 4 # szerokość piksela
 		self.PY = 4 # wysokość piksela
@@ -54,8 +52,8 @@ class Temtris () :
 		self.SELECT1 = K_RSHIFT
 		
 		# gracz 2
-		self.A2 = K_k
-		self.B2 = K_l
+		self.A2 = K_l
+		self.B2 = K_k
 		self.UP2 = K_UP
 		self.DOWN2 = K_DOWN
 		self.LEFT2 = K_LEFT
@@ -66,13 +64,14 @@ class Temtris () :
 		# zmienne sterujące gry
 		self.pauza = False
 		self.poziom = 0
-		self.liczbaLinii = 0
-		self.liczbaLiniiCheems = 0
-		self.liczbaLiniiDoge = 0
-		self.liczbaLiniiBuffDoge = 0
-		self.liczbaLiniiTemtris = 0
-		self.liczbaPunktów = 0
+		self.liczbaLinii = [0, 0]
+		self.liczbaLiniiCheems = [0, 0]
+		self.liczbaLiniiDoge = [0, 0]
+		self.liczbaLiniiBuffDoge = [0, 0]
+		self.liczbaLiniiTemtris = [0, 0]
+		self.liczbaPunktów = [0, 0]
 		self.czasGry = 0
+		self.dwóchGraczy = False
 		self.obecnyGracz = 0
 		self.zegarKontrolera = 10
 		self.szybkośćOpadaniaKlocka = 60
@@ -90,7 +89,6 @@ class Temtris () :
 		pygame.display.set_caption ("Temtris.py")
 		
 		# dźwięk i muzyka
-		
 		self.uderzenieSFX = pygame.mixer.Sound("Assets/Dźwięk/uderzenie.ogg")
 		
 		self.cheemsSFX = pygame.mixer.Sound("Assets/Dźwięk/cheems.ogg")
@@ -107,9 +105,15 @@ class Temtris () :
 		
 		# grafika
 		self.klockiSprite = pygame.image.load ("Assets/Grafika/klocki sprite.png").convert_alpha ()
+		self.klockiSpriteGracz1 = pygame.image.load ("Assets/Grafika/klocki sprite gracz 1.png").convert_alpha ()
+		self.klockiSpriteGracz2 = pygame.image.load ("Assets/Grafika/klocki sprite gracz 2.png").convert_alpha ()
 		self.fragmentySprite = pygame.image.load ("Assets/Grafika/fragmenty sprite.png").convert_alpha ()
 		self.rozbijanieLiniiSprite = pygame.image.load ("Assets/Grafika/rozbijanie linii sprite.png").convert_alpha ()
 		self.cyfrySprite = pygame.image.load ("Assets/Grafika/cyfry sprite.png").convert_alpha ()
+		
+		self.pauzaSprite = pygame.image.load ("Assets/Grafika/pauza.png").convert_alpha ()
+		self.czaszkaSprite = pygame.image.load ("Assets/Grafika/czaszka.png").convert_alpha ()
+		self.koronaSprite = pygame.image.load ("Assets/Grafika/korona.png").convert_alpha ()
 		
 	def Start (self) :
 		
@@ -118,9 +122,9 @@ class Temtris () :
 		# główna pętla
 		while True :
 			
-			dwóchGraczy = self.Menu ()
-			self.Gra (dwóchGraczy)
-			self.KoniecGry (dwóchGraczy)
+			self.Menu ()
+			self.Gra ()
+			self.KoniecGry ()
 	
 	# ###########################
 	#            INTRO
@@ -128,7 +132,7 @@ class Temtris () :
 	
 	def Intro (self) :
 		
-		if not self.CzekajLubPomiń (16) :
+		if not self.CzekajLubPomiń (32) :
 			return
 		
 		introSprite = pygame.image.load ("Assets/Grafika/intro sprite.png")
@@ -138,12 +142,13 @@ class Temtris () :
 		
 		for i in range (0, 4) :
 			
+			# rysuj na ekranie logo
 			self.okno.blit(introSprite, Rect (6 * self.X, 11 * self.Y, 608, 320), Rect (0, i * 320, 608, 320))
 			
-			if not self.CzekajLubPomiń (16) :
+			if not self.CzekajLubPomiń (32) :
 				return
 		
-		if not self.CzekajLubPomiń (90) :
+		if not self.CzekajLubPomiń (180) :
 			return
 			
 		pygame.mixer.music.stop ()
@@ -153,16 +158,33 @@ class Temtris () :
 	# ##########################
 	
 	class Strzałka (pygame.sprite.Sprite) :
+		"""Reprezentuje sprite strzałki w menu, służącej do wyboru trybu gry"""
 		
-			def __init__(self) :
-				super().__init__()
-				
-				self.image = pygame.image.load ("Assets/Grafika/strzałka.png")
-				self.rect = self.image.get_rect()
+		def __init__(self) :
+			super().__init__()
+			
+			self.image = pygame.image.load ("Assets/Grafika/strzałka.png")
+			self.rect = self.image.get_rect()
 	
 	def Menu (self) :
 		
-		dwóchGraczy = False
+		# wyzeruj zmienne sterujące grą
+		self.pauza = False
+		self.poziom = 0
+		self.liczbaLinii = [0, 0]
+		self.liczbaLiniiCheems = [0, 0]
+		self.liczbaLiniiDoge = [0, 0]
+		self.liczbaLiniiBuffDoge = [0, 0]
+		self.liczbaLiniiTemtris = [0, 0]
+		self.liczbaPunktów = [0, 0]
+		self.czasGry = 0
+		self.dwóchGraczy = False
+		self.obecnyGracz = 0
+		self.zegarKontrolera = 10
+		self.szybkośćOpadaniaKlocka = 60
+		self.zegarOpadania = 60
+		
+		self.plansza = self.Plansza (self)
 		
 		# załaduj tło menu
 		tłoMenu = pygame.image.load ("Assets/Grafika/menu.png")
@@ -195,14 +217,14 @@ class Temtris () :
 				if event.type == KEYDOWN :
 					# START
 					if event.key == (self.START1 or self.START2) :
-						return dwóchGraczy
+						return
 					elif event.key == (self.SELECT1 or self.SELECT2) :
-						dwóchGraczy = not dwóchGraczy
+						self.dwóchGraczy = not self.dwóchGraczy
 						
 						# narysuj tło
 						self.okno.blit (tłoMenu, tłoMenu.get_rect())
 						
-						if dwóchGraczy :
+						if self.dwóchGraczy :
 							strzałka.rect.y += self.Y
 						else :
 							strzałka.rect.y -= self.Y
@@ -217,6 +239,7 @@ class Temtris () :
 	# ###########################
 	
 	class Klocek (pygame.sprite.Sprite) :
+		"""Reprezentuje klocek nad którym gracz ma kontrolę"""
 		
 		def __init__ (self, temtris) :
 			super().__init__()
@@ -244,8 +267,16 @@ class Temtris () :
 		
 		def UtwórzGrafike (self, obrót, numerKlocka) -> pygame.Surface :
 			
+			spritesheet = self.temtris.klockiSprite
+			
+			if self.temtris.dwóchGraczy :
+				if self.temtris.obecnyGracz == 0 :
+					spritesheet = self.temtris.klockiSpriteGracz1
+				else :
+					spritesheet = self.temtris.klockiSpriteGracz2
+			
 			grafika = pygame.Surface((128, 128)).convert_alpha ()
-			grafika.blit (self.temtris.klockiSprite, Rect (0, 0, 128, 128), Rect (obrót * 128, numerKlocka * 128, 128, 128))
+			grafika.blit (spritesheet, Rect (0, 0, 128, 128), Rect (obrót * 128, numerKlocka * 128, 128, 128))
 			grafika.set_colorkey ((0, 0, 0))
 			
 			return grafika
@@ -313,59 +344,9 @@ class Temtris () :
 			if not self.temtris.plansza.SprawdźKolizję (macierzKolizji, self.x, self.y) :
 				self.obrót = (self.obrót - 1) % 4
 				self.image = self.UtwórzGrafike (self.obrót, self.numerKlocka)
-
-	class Fragment (pygame.sprite.Sprite) :
-		
-		def __init__ (self, temtris, numerFragmentu, x, y) :
-			super().__init__()
-			
-			self.temtris = temtris
-			
-			self.numerFragmentu = numerFragmentu
-			
-			self.UstawGrafikę (0, self.numerFragmentu)
-			self.rect = self.image.get_rect ()
-			self.rect.x = x * self.temtris.X + 10 * self.temtris.X
-			self.rect.y = y * self.temtris.Y + 5 * self.temtris.Y
-			
-		def UstawGrafikę (self, numerGracza, numerFragmentu) -> pygame.Surface :
-			
-			# numer gracza nakłada na fragment specyficzny kolor
-			# jeśli numer gracza == 0 to nakłada kolor poziomu
-			# jeśli nie da się osiągnąc przez nakładanie takich kolorów to zrobię spritesheeta z wszystkimi kolorami ręcznie
-			
-			grafika = pygame.Surface((32, 32)).convert_alpha ()
-			grafika.blit (self.temtris.fragmentySprite, Rect (0, 0, 32, 32), Rect (numerFragmentu * 32, 0, 32, 32))
-			grafika.set_colorkey ((0, 0, 0))
-			
-			self.image = grafika
 			
 	class Plansza () :
-		
-		class AnimacjaRozbijanejLinii (pygame.sprite.Sprite) :
-			
-			def __init__ (self, plansza, ilośćLinii, numerLinii) :
-				super ().__init__ ()
-				
-				self.plansza = plansza
-				
-				self.klatka = -1
-				self.ilośćLinii = ilośćLinii
-				
-				self.NastępnaKlatka ()
-				self.rect = self.image.get_rect ()
-				self.rect.x = 10 * self.plansza.temtris.X
-				self.rect.y = 5 * self.plansza.temtris.Y + numerLinii * self.plansza.temtris.Y
-			
-			def NastępnaKlatka (self) :
-				
-				self.klatka += 1
-				
-				grafika = pygame.Surface((320, 32)).convert_alpha ()
-				grafika.blit (self.plansza.temtris.rozbijanieLiniiSprite, Rect (0, 0, 320, 32), Rect ((self.ilośćLinii - 1) * 320, self.klatka * 32, 320, 32))
-				grafika.set_colorkey ((0, 255, 0))
-				
-				self.image = grafika
+		"""Reprezentuje plansze, na której rozgrywa się gra"""
 		
 		def __init__ (self, temtris) :
 			self.temtris = temtris
@@ -381,6 +362,12 @@ class Temtris () :
 						wszystkieSprite.add (sprite)
 			
 			wszystkieSprite.draw (self.temtris.okno)
+		
+		def Odśwież (self) :
+			for i in self.macierzSpriteów :
+				for sprite in i :
+					if sprite != None :
+						sprite.UstawGrafikę (sprite.numerFragmentu)
 		
 		def SprawdźRozbicieLinii (self) :
 			
@@ -439,44 +426,45 @@ class Temtris () :
 						if sx - 1 >= 0 and macierzKolizji[sy][sx - 1] == 1 :
 							numerFragmentu += 1
 						
-						self.macierzSpriteów[y + sy][x + sx] = self.temtris.Fragment (self.temtris, numerFragmentu, x + sx, y + sy)
+						self.macierzSpriteów[y + sy][x + sx] = self.Fragment (self.temtris, numerFragmentu, x + sx, y + sy)
 						
 			pygame.mixer.Sound.play(self.temtris.uderzenieSFX)
 		
 		def RozbijLinie (self, linieDoRozbicia) :
 			
-			# odtwórz animację
-			
+			# utwórz sprite animacji
 			spriteAnimacji = pygame.sprite.Group ()
 			
 			for numerLinii in linieDoRozbicia :
 				spriteAnimacji.add (self.AnimacjaRozbijanejLinii (self, len (linieDoRozbicia), numerLinii))
 			
-			self.temtris.liczbaLinii += len (linieDoRozbicia)
+			# podlicz punkty i statystykę
+			self.temtris.liczbaLinii[self.temtris.obecnyGracz] += len (linieDoRozbicia)
 			
 			if len (linieDoRozbicia) == 1 :
 				pygame.mixer.Sound.play(self.temtris.cheemsSFX)
-				self.temtris.liczbaLiniiCheems += 1
-				self.temtris.liczbaPunktów += 1
+				self.temtris.liczbaLiniiCheems[self.temtris.obecnyGracz] += 1
+				self.temtris.liczbaPunktów[self.temtris.obecnyGracz] += 1
 			elif len (linieDoRozbicia) == 2 :
 				pygame.mixer.Sound.play(self.temtris.dogeSFX)
-				self.temtris.liczbaLiniiDoge += 1
-				self.temtris.liczbaPunktów += 4
+				self.temtris.liczbaLiniiDoge[self.temtris.obecnyGracz] += 1
+				self.temtris.liczbaPunktów[self.temtris.obecnyGracz] += 4
 			elif len (linieDoRozbicia) == 3 :
 				pygame.mixer.Sound.play(self.temtris.buffdogeSFX)
-				self.temtris.liczbaLiniiBuffDoge += 1
-				self.temtris.liczbaPunktów += 6
+				self.temtris.liczbaLiniiBuffDoge[self.temtris.obecnyGracz] += 1
+				self.temtris.liczbaPunktów[self.temtris.obecnyGracz] += 6
 			elif len (linieDoRozbicia) == 4 :
 				pygame.mixer.Sound.play(self.temtris.temtrisSFX)
-				self.temtris.liczbaLiniiTemtris += 1
-				self.temtris.liczbaPunktów += 8
+				self.temtris.liczbaLiniiTemtris[self.temtris.obecnyGracz] += 1
+				self.temtris.liczbaPunktów[self.temtris.obecnyGracz] += 8
 			
+			# odtwórz animację
 			for x in range (0, 32) :
 				
 				spriteAnimacji.draw (self.temtris.okno)
 				
 				pygame.display.update ()
-				self.temtris.zegar.tick (self.temtris.fps * 2)
+				self.temtris.zegar.tick (self.temtris.fps)
 				
 				for sprite in spriteAnimacji :
 					sprite.NastępnaKlatka ()
@@ -487,12 +475,12 @@ class Temtris () :
 				if numerLinii - 1 >= 0 :
 					for x in range (0, 10) :
 						if self.macierzSpriteów [numerLinii - 1][x] != None :
-							self.macierzSpriteów[numerLinii - 1][x].UstawGrafikę (0, self.macierzSpriteów[numerLinii - 1][x].numerFragmentu & 13)
+							self.macierzSpriteów[numerLinii - 1][x].UstawGrafikę (self.macierzSpriteów[numerLinii - 1][x].numerFragmentu & 13)
 				
 				if numerLinii + 1 < 20 :
 					for x in range (0, 10) :
 						if self.macierzSpriteów [numerLinii + 1][x] != None :
-							self.macierzSpriteów[numerLinii + 1][x].UstawGrafikę (0, self.macierzSpriteów[numerLinii + 1][x].numerFragmentu & 7)
+							self.macierzSpriteów[numerLinii + 1][x].UstawGrafikę (self.macierzSpriteów[numerLinii + 1][x].numerFragmentu & 7)
 			
 			# usuń linie i utwórz nowe na górze
 			for numerLinii in linieDoRozbicia :
@@ -501,18 +489,112 @@ class Temtris () :
 				for _ in range (0, 10) :
 					self.macierzSpriteów[0].append (None)
 			
+			# odśwież pozycje fragmentów
 			for y in range (0, 20) :
 				for x in range (0, 10) :
 					if self.macierzSpriteów [y][x] != None :
 						self.macierzSpriteów [y][x].rect.y = y * self.temtris.Y + 5 * self.temtris.Y
+		
+		class Fragment (pygame.sprite.Sprite) :
+			"""Reprezentuje pojedynczy mały fragment klocka położony na planszy"""
+			
+			def __init__ (self, temtris, numerFragmentu, x, y) :
+				super().__init__()
+				
+				self.temtris = temtris
+				self.numerGracza = self.temtris.obecnyGracz
+				
+				self.numerFragmentu = numerFragmentu
+				
+				self.UstawGrafikę (self.numerFragmentu)
+				self.rect = self.image.get_rect ()
+				self.rect.x = x * self.temtris.X + 10 * self.temtris.X
+				self.rect.y = y * self.temtris.Y + 5 * self.temtris.Y
+				
+			def UstawGrafikę (self, numerFragmentu) -> pygame.Surface :
+				
+				numerKoloru = self.temtris.poziom
+				
+				if self.temtris.dwóchGraczy :
+					if self.numerGracza == 0 :
+						numerKoloru = 7
+					else :
+						numerKoloru = 3
+				
+				grafika = pygame.Surface((32, 32)).convert_alpha ()
+				grafika.blit (self.temtris.fragmentySprite, Rect (0, 0, 32, 32), Rect (numerFragmentu * 32, numerKoloru * 32, 32, 32))
+				grafika.set_colorkey ((0, 0, 0))
+				
+				self.image = grafika
+						
+		class AnimacjaRozbijanejLinii (pygame.sprite.Sprite) :
+			"""Reprezentuje pojedynczy animowany pasek podczas rozbijania linii"""
+			
+			def __init__ (self, plansza, ilośćLinii, numerLinii) :
+				super ().__init__ ()
+				
+				self.plansza = plansza
+				
+				self.klatka = -1
+				self.ilośćLinii = ilośćLinii
+				
+				self.NastępnaKlatka ()
+				self.rect = self.image.get_rect ()
+				self.rect.x = 10 * self.plansza.temtris.X
+				self.rect.y = 5 * self.plansza.temtris.Y + numerLinii * self.plansza.temtris.Y
+			
+			def NastępnaKlatka (self) :
+				
+				self.klatka += 1
+				
+				grafika = pygame.Surface((320, 32)).convert_alpha ()
+				grafika.blit (self.plansza.temtris.rozbijanieLiniiSprite, Rect (0, 0, 320, 32), Rect ((self.ilośćLinii - 1) * 320, self.klatka * 32, 320, 32))
+				grafika.set_colorkey ((0, 255, 0))
+				
+				self.image = grafika
 
+	def Pauza (self) :
+		
+		self.mixer.music.Pause ()
+		
+		self.pauza = True
+		while self.pauza :
+			for event in pygame.event.get() :
+						
+				# naciśnięcie X na oknie
+				if event.type == QUIT:
+					pygame.quit ()
+					exit ()
+				
+				if event.type == KEYDOWN :
+					if event.key == (self.START1 or self.START2) :
+						self.pauza = False
+			
+			pygame.display.update ()
+			self.zegar.tick (self.fps)
+		
+		self.mixer.music.Resume ()
+		
 	def OdtwarzajMuzykę (self) :
 		
 		if not pygame.mixer.music.get_busy () :
 			pygame.mixer.music.load (self.muzyka[randrange (4)])
 			pygame.mixer.music.play ()
-
-	def Gra (self, dwóchGraczy) :
+		
+	def NastępnaMelodia (self) :
+		
+		pygame.mixer.music.stop ()
+		pygame.mixer.music.load (self.muzyka[randrange (4)])
+		pygame.mixer.music.play ()
+	
+	def NastępnyPoziom (self) :
+		if self.szybkośćOpadaniaKlocka > 4 :
+			self.szybkośćOpadaniaKlocka -= 4
+		if self.poziom < 15 :
+			self.poziom += 1
+		self.plansza.Odśwież ()
+	
+	def Gra (self) :
 		
 		pygame.mixer.music.stop ()
 		
@@ -526,7 +608,10 @@ class Temtris () :
 		następnyKolcek.append (self.Klocek (self))
 		następnyKolcek[0].UstawPozycję (4, 4)
 		
-		if dwóchGraczy :
+		if self.dwóchGraczy :
+			
+			self.obecnyGracz = 1
+			
 			tłoGra = pygame.image.load ("Assets/Grafika/gra dwóch graczy.png")
 			
 			licznikLinii.append (self.Liczba (self, 4, 21, 9))
@@ -534,6 +619,8 @@ class Temtris () :
 			
 			następnyKolcek.append (self.Klocek (self))
 			następnyKolcek[1].UstawPozycję (22, 4)
+			
+			self.obecnyGracz = 0
 		else :
 			tłoGra = pygame.image.load ("Assets/Grafika/gra.png")
 		
@@ -546,12 +633,15 @@ class Temtris () :
 			if not obecnyKlocek.UstawPozycję (13, 5) :
 				break
 			następnyKolcek[self.obecnyGracz] = self.Klocek (self)
-			następnyKolcek[self.obecnyGracz].UstawPozycję (4, 4)
+			if self.obecnyGracz == 0 :
+				następnyKolcek[self.obecnyGracz].UstawPozycję (4, 4)
+			else :
+				następnyKolcek[self.obecnyGracz].UstawPozycję (22, 4)
 			
 			wszystkieSprite = pygame.sprite.Group()
 			wszystkieSprite.add (obecnyKlocek)
 			wszystkieSprite.add (następnyKolcek[0])
-			if dwóchGraczy :
+			if self.dwóchGraczy :
 				wszystkieSprite.add (następnyKolcek[1])
 			wszystkieSprite.draw (self.okno)
 			
@@ -561,7 +651,8 @@ class Temtris () :
 				
 				self.zegarOpadania -= 1
 				if self.zegarOpadania == 0 :
-					obecnyKlocek.Opadaj ()
+					if not obecnyKlocek.Opadaj () :
+						break
 					self.zegarOpadania = self.szybkośćOpadaniaKlocka
 				
 				for event in pygame.event.get() :
@@ -570,6 +661,12 @@ class Temtris () :
 					if event.type == QUIT:
 						pygame.quit ()
 						exit ()
+					
+					if event.type == KEYDOWN:
+						if event.key == (self.SELECT1 or self.SELECT2) :
+							self.NastępnaMelodia ()
+						if event.key == (self.START1 or self.START2) :
+							self.Pauza ()
 				
 				klawisze = pygame.key.get_pressed ()
 				
@@ -607,7 +704,10 @@ class Temtris () :
 					licznik.Rysuj ()
 				for licznik in licznikPunktów :
 					licznik.Rysuj ()
-					
+				
+				# policz klatkę czasu gry
+				self.czasGry += 1
+				
 				pygame.display.update ()
 				self.zegar.tick (self.fps)
 			
@@ -618,10 +718,21 @@ class Temtris () :
 			linieDoRozbicia = self.plansza.SprawdźRozbicieLinii ()
 			
 			if len (linieDoRozbicia) > 0 :
-				self.plansza.RozbijLinie (linieDoRozbicia)
-				licznikLinii[0].Ustaw (self.liczbaLinii)
-				licznikPunktów[0].Ustaw (self.liczbaPunktów)
 				
+				if self.dwóchGraczy :
+					if self.liczbaLinii[0] % 30 + len (linieDoRozbicia) >= 30 :
+						self.NastępnyPoziom ()
+				else :
+					if (self.liczbaLinii[0] + self.liczbaLinii[1]) % 30 + len (linieDoRozbicia) >= 30 :
+						self.NastępnyPoziom ()
+				
+				self.plansza.RozbijLinie (linieDoRozbicia)
+				licznikLinii[self.obecnyGracz].Ustaw (self.liczbaLinii[self.obecnyGracz])
+				licznikPunktów[self.obecnyGracz].Ustaw (self.liczbaPunktów[self.obecnyGracz])
+			
+			# policz klatkę czasu gry
+			self.czasGry += 1
+			
 			# odśwież ekran
 			self.okno.blit (tłoGra, tłoGra.get_rect())
 			wszystkieSprite.draw (self.okno)
@@ -636,7 +747,7 @@ class Temtris () :
 			self.zegar.tick (self.fps)
 			
 			# zmień gracza
-			if dwóchGraczy :
+			if self.dwóchGraczy :
 				self.obecnyGracz = 1 - self.obecnyGracz
 			
 
@@ -644,21 +755,46 @@ class Temtris () :
 	#         KONIEC GRY
 	# ###########################
 	
-	def KoniecGry (self, dwóchGraczy) :
+	class Korona (pygame.sprite.Sprite) :
+		"""Prosta ikonka w ekranie końca gry dla dwóch graczy, wyświetlana jest przy graczu z większą ilością punktów"""
+		
+		def __init__ (self, temtris, x, y) :
+			super ().__init__ ()
+			
+			grafika = pygame.Surface((32, 32)).convert_alpha ()
+			grafika.blit (temtris.koronaSprite, Rect (0, 0, 32, 32), Rect (0, 0, 32, 32))
+			grafika.set_colorkey ((0, 0, 0))
+			
+			self.image = grafika
+			self.rect = self.image.get_rect ()
+			self.rect.x = x * temtris.X
+			self.rect.y = y * temtris.Y
+	
+	class Czaszka (pygame.sprite.Sprite) :
+		"""Prosta ikonka w ekranie końca gry dla dwóch graczy, wyświetlana jest przy graczu, którego następny klocek nie zmieścił się już na planszy"""
+		
+		def __init__ (self, temtris, x, y) :
+			super ().__init__ ()
+			
+			grafika = pygame.Surface((32, 32)).convert_alpha ()
+			grafika.blit (temtris.czaszkaSprite, Rect (0, 0, 32, 32), Rect (0, 0, 32, 32))
+			grafika.set_colorkey ((0, 0, 0))
+			
+			self.image = grafika
+			self.rect = self.image.get_rect ()
+			self.rect.x = x * temtris.X
+			self.rect.y = y * temtris.Y
+	
+	def KoniecGry (self) :
 		
 		while True :
 			
 			pygame.mixer.music.stop ()
 			
-			# TODO czy da się to uprościć?
-			# czekaj 32 klatki
-			for _ in range (0, 32) :
-				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
+			self.Czekaj (64)
 			
 			koniecGryKlatka1 = pygame.image.load ("Assets/Grafika/koniec gry klatka 1.png")
-			if dwóchGraczy :
+			if self.dwóchGraczy :
 				koniecGryKlatka2 = pygame.image.load ("Assets/Grafika/koniec gry klatka 2 dwóch graczy.png")
 			else :
 				koniecGryKlatka2 = pygame.image.load ("Assets/Grafika/koniec gry klatka 2.png")
@@ -670,16 +806,69 @@ class Temtris () :
 			pygame.display.update ()
 			self.zegar.tick (self.fps)
 			
-			for _ in range (0, 42) :
-				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
+			self.Czekaj (84)
 			
 			self.okno.blit (koniecGryKlatka2, koniecGryKlatka2.get_rect())
 			pygame.display.update ()
 			self.zegar.tick (self.fps)
 			
+			liczniki = []
+			
+			ikony = pygame.sprite.Group ()
+			
+			# statystyki gracza 1
+			
+			pozycjaX = 10
+			if self.dwóchGraczy :
+				pozycjaX = 6
+			
+			for i in range (13, 25, 2) :
+				liczniki.append (self.Liczba (self, 4, pozycjaX, i))
+			
+			liczniki[0].Ustaw (self.liczbaPunktów[0])
+			liczniki[1].Ustaw (self.liczbaLinii[0])
+			liczniki[2].Ustaw (self.liczbaLiniiCheems[0])
+			liczniki[3].Ustaw (self.liczbaLiniiDoge[0])
+			liczniki[4].Ustaw (self.liczbaLiniiBuffDoge[0])
+			liczniki[5].Ustaw (self.liczbaLiniiTemtris[0])
+			
+			# czas gry
+			liczniki.append (self.Liczba (self, 3, 10, 25))
+			liczniki.append (self.Liczba (self, 2, 14, 25))
+			liczniki[7].Ustaw (self.czasGry // 3600)
+			liczniki[6].Ustaw (self.czasGry // 60 % 60)
+			
+			# statystyki gracza 2
+			if self.dwóchGraczy :
+				for i in range (13, 25, 2) :
+					liczniki.append (self.Liczba (self, 4, 11, i))
+				
+				liczniki[8].Ustaw (self.liczbaPunktów[1])
+				liczniki[9].Ustaw (self.liczbaLinii[1])
+				liczniki[10].Ustaw (self.liczbaLiniiCheems[1])
+				liczniki[11].Ustaw (self.liczbaLiniiDoge[1])
+				liczniki[12].Ustaw (self.liczbaLiniiBuffDoge[1])
+				liczniki[13].Ustaw (self.liczbaLiniiTemtris[1])
+				
+				if self.liczbaPunktów[0] != self.liczbaPunktów[1] :
+					if self.liczbaPunktów[0] > self.liczbaPunktów[1] :
+						ikony.add (self.Korona (self, 7, 11))
+					else :
+						ikony.add (self.Korona (self, 12, 11))
+				
+				if self.obecnyGracz == 0 :
+					ikony.add (self.Czaszka (self, 10, 11))
+				else :
+					ikony.add (self.Czaszka (self, 15, 11))
+			
 			while True :
+			
+				for licznik in liczniki :
+					licznik.Rysuj ()
+				ikony.draw (self.okno)
+				
+				pygame.display.update ()
+				self.zegar.tick (self.fps)
 			
 				for event in pygame.event.get() :
 					# naciśnięcie X na oknie
@@ -691,9 +880,6 @@ class Temtris () :
 						if event.key == (self.START1 or self.START2) :
 							return
 				
-				pygame.display.update ()
-				self.zegar.tick (self.fps)
-	
 	# #######################
 	#       PRZYDATNE
 	# #######################
