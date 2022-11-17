@@ -148,8 +148,8 @@ class Temtris () :
 		print ()
 		print ("Gracz 2:")
 		print ("Poruszanie: V B N")
-		print ("Obrót zgodnie z ruchem zegarem: L")
-		print ("Obrót przeciwnie do ruchu zegara: K")
+		print ("Obrót zgodnie z ruchem zegarem: X")
+		print ("Obrót przeciwnie do ruchu zegara: Z")
 		
 		self.Intro ()
 		
