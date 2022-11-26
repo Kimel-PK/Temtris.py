@@ -175,7 +175,7 @@ class Temtris () :
 			# naciśnięcie X na oknie
 			if event.type == QUIT:
 				pygame.quit ()
-				exit ()
+				sys.exit ()
 			elif event.type == VIDEORESIZE:
 				self.okno = pygame.display.set_mode((event.size[1] * self.proporcjeObrazu, event.size[1]), HWSURFACE|DOUBLEBUF|RESIZABLE)
 		
