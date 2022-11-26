@@ -130,3 +130,6 @@ dmypy.json
 
 # Builds directory
 Builds
+
+# IDE
+.vscode
