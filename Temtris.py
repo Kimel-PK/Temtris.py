@@ -25,6 +25,15 @@ import pygame
 from pygame.locals import *
 from random import randrange
 
+# jeśli uruchomiliśmy skompilowaną wersje, zmienia ścieżkę dostępu do assetów
+import sys
+import os
+if getattr (sys, 'frozen', False) :
+	path = sys._MEIPASS
+else :
+	path = "."
+os.chdir (path)
+
 class Temtris () :
 	
 	def __init__ (self) :
