@@ -24,6 +24,8 @@ Przyciski kontrolera NES zostały przeniesionę naklawiaturę w następujący sp
 - Enter - Start gry / pauza
 - Prawy shift - zmień tryb gry / następna melodia
 
+![kontroler 1](https://user-images.githubusercontent.com/57668948/204330494-e2bbfb67-a95b-4865-9c9a-90178ade0fb5.png)
+
 ### Gracz 2
 
 - VBN - ruch klocka
@@ -31,6 +33,8 @@ Przyciski kontrolera NES zostały przeniesionę naklawiaturę w następujący sp
 - X - obrót klocka zgodnie z ruchem wskazówek zegara
 - Enter - Start gry / pauza
 - Prawy shift - zmień tryb gry / następna melodia
+
+![kontroler 2](https://user-images.githubusercontent.com/57668948/204330534-1aab3375-fa96-4bcc-a4e8-425dbcb337e5.png)
 
 ## Wymagania
 
