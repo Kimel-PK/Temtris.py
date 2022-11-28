@@ -12,6 +12,26 @@ Repozytorium projektu `Temtris (NES)`:
 
 Projekt został stworzony jako projekt zaliczeniowy z przedmiotu Język Python na studia. Aktualna wersja oparta jest na Temtrisie (NES) w wersji 1.5.4
 
+## Sterowanie
+
+Przyciski kontrolera NES zostały przeniesionę naklawiaturę w następujący sposób:
+
+### Gracz 1
+
+- ←↓→ - ruch klocka
+- K - obrót klocka przeciwnie do ruchu wskazówek zegara
+- L - obrót klocka zgodnie z ruchem wskazówek zegara
+- Enter - Start gry / pauza
+- Prawy shift - zmień tryb gry / następna melodia
+
+### Gracz 2
+
+- VBN - ruch klocka
+- Z - obrót klocka przeciwnie do ruchu wskazówek zegara
+- X - obrót klocka zgodnie z ruchem wskazówek zegara
+- Enter - Start gry / pauza
+- Prawy shift - zmień tryb gry / następna melodia
+
 ## Wymagania
 
 `Temtris.py` został napisany z wykorzystaniem poniższych wersji bibliotek:
@@ -22,7 +42,20 @@ pygame 2.1.3.dev8
 SDL 2.0.22
 ```
 
+Zainstaluj wymagane biblioteki ręcznie lub pobierz plik `requirements.txt`. Następnie uruchom wiersz poleceń / terminal i wpisz:
+
+```console
+pip install -r requirements.txt
+```
+
 ## Uruchamianie
+
+### Plik wykonywalny
+
+1. Pobierz najnowsze wydanie Temtrisa pod twój system operacyjny.
+2. Uruchom pobrany plik
+
+### Kopia repozytorium
 
 1. Pobierz repozytorium i wypakuj je
 2. Uruchom wiersz poleceń / terminal w miejscu, w którym znajduje się plik `Temtris.py`
