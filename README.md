@@ -14,7 +14,7 @@ Projekt został stworzony jako projekt zaliczeniowy z przedmiotu Język Python n
 
 ## Sterowanie
 
-Przyciski kontrolera NES zostały przeniesionę naklawiaturę w następujący sposób:
+Przyciski kontrolera NES zostały przeniesionę na klawiaturę w następujący sposób:
 
 ### Gracz 1
 
@@ -55,6 +55,8 @@ pip install -r requirements.txt
 ## Uruchamianie
 
 ### Plik wykonywalny
+
+> Na razie tylko dla systemu Windows
 
 1. Pobierz najnowsze wydanie Temtrisa pod twój system operacyjny.
 2. Uruchom pobrany plik
