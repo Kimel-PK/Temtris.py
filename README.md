@@ -14,7 +14,7 @@ Projekt został stworzony jako projekt zaliczeniowy z przedmiotu Język Python n
 
 ## Sterowanie
 
-Przyciski kontrolera NES zostały przeniesionę na klawiaturę w następujący sposób:
+Przyciski kontrolera NES zostały przeniesione na klawiaturę w następujący sposób:
 
 ### Gracz 1
 
